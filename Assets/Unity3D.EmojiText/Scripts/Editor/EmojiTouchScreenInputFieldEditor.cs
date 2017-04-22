@@ -13,9 +13,6 @@ namespace ui
 		GUIContent lbPlaceholder;
 		SerializedProperty propPlaceholder;
 
-		GUIContent lbText;
-		SerializedProperty propText;
-
 		GUIContent lbKeyboardType;
 		SerializedProperty propKeyboardType;
 
@@ -32,9 +29,6 @@ namespace ui
 
 			lbPlaceholder = new GUIContent("Placeholder");
 			propPlaceholder = serializedObject.FindProperty("m_Placeholder");
-
-			lbText = new GUIContent("Text");
-			propText = serializedObject.FindProperty("m_Text");
 
 			lbKeyboardType = new GUIContent("Keyboard Type");
 			propKeyboardType = serializedObject.FindProperty("m_KeyboardType");
