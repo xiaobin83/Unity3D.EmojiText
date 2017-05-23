@@ -51,12 +51,9 @@ namespace ui
 				if (raycastDelegate != null)
 				{
 					var href = raycastDelegate(eventData.position, eventData.pressEventCamera);
-					if (!string.IsNullOrEmpty(href))
+					if (handleDelegate != null)
 					{
-						if (handleDelegate != null)
-						{
-							handleDelegate(href);
-						}
+						handleDelegate(href);
 					}
 				}
 			}
