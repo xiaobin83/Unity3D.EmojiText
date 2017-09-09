@@ -30,3 +30,6 @@ sysinfo.txt
 *.unitypackage
 
 Library/
+*.orig
+*.orig.meta
+

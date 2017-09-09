@@ -28,6 +28,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
+using System.Text.RegularExpressions;
 using System.Collections;
 using System;
 
@@ -61,8 +62,17 @@ namespace ui
 
 		string m_OriginalText;
 
+		private int m_CharacterLimits = 0; // unlimited
+
+		private bool m_AllowRichStyleTag = false;
+
 		[SerializeField]
 		string m_Text = string.Empty;
+
+		[Serializable]
+		public class OnNumCharExceedsEvent : UnityEvent { }
+		[SerializeField]
+		private OnNumCharExceedsEvent m_OnNumCharExceedsEvent = new OnNumCharExceedsEvent();
 
 		public string text
 		{
@@ -173,6 +183,30 @@ namespace ui
 			m_ShouldActivateNextUpdate = true;
 		}
 
+		string ClampText(string str)
+		{
+			if (m_CharacterLimits > 0)
+			{
+				var origLength = str.Length;
+				var newStr = str.Substring(0, Mathf.Min(m_CharacterLimits, str.Length));
+				if (newStr.Length < origLength)
+				{
+					m_OnNumCharExceedsEvent.Invoke();
+				}
+				return newStr;
+			}
+			return str;
+		}
+
+		string CheckRichStyleTags(string str)
+		{
+			if (!m_AllowRichStyleTag)
+			{
+				return EmojiText.RemoveRichTextStyleTags(str);
+			}
+			return str;
+		}
+		
 		public void DeactivateInputField()
 		{
 			// Not activated do nothing.
@@ -199,6 +233,9 @@ namespace ui
 					{
 						keyboardText = m_FakeKeyboard.text;
 					}
+
+					keyboardText = ClampText(keyboardText);
+					keyboardText = CheckRichStyleTags(keyboardText);
 
 					if (excludeEmojiCharacters)
 					{

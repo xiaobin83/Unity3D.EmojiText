@@ -33,9 +33,9 @@ namespace ui
 		GUIContent lbEmoji;
 
 		SerializedProperty propConfig;
-		SerializedProperty propHrefColor;
 		SerializedProperty propHrefOnClickedEventName;
 		SerializedProperty propHrefOnClickedEvent;
+		SerializedProperty propOnTextChangedEvent;
 		SerializedProperty propEscapeUnicodeCharacter;
 		SerializedProperty propAltPredefinedStringColor;
 		SerializedProperty propPredefinedStringColor;
@@ -48,9 +48,9 @@ namespace ui
 			lbEmoji = new GUIContent("Emoji");
 
 			propConfig = serializedObject.FindProperty("m_Config");
-			propHrefColor = serializedObject.FindProperty("hrefColor");
 			propHrefOnClickedEventName = serializedObject.FindProperty("hrefOnClickedEventName");
 			propHrefOnClickedEvent = serializedObject.FindProperty("hrefOnClickedEvent");
+			propOnTextChangedEvent = serializedObject.FindProperty("onTextChangedEvent");
 			propEscapeUnicodeCharacter = serializedObject.FindProperty("escapeUnicodeCharacter");
 			propAltPredefinedStringColor = serializedObject.FindProperty("altPredefinedStringColor");
 			propPredefinedStringColor = serializedObject.FindProperty("predefinedStringColor");
@@ -74,10 +74,10 @@ namespace ui
 					propConfig.objectReferenceValue = objConfig;
 				}
 			}
-			EditorGUILayout.PropertyField(propHrefColor);
 			EditorGUILayout.PropertyField(propHrefOnClickedEventName);
 			EditorGUILayout.PropertyField(propHrefOnClickedEvent);
-			EditorGUILayout.PropertyField(propEscapeUnicodeCharacter);
+			EditorGUILayout.PropertyField(propOnTextChangedEvent);
+            EditorGUILayout.PropertyField(propEscapeUnicodeCharacter);
 			EditorGUILayout.PropertyField(propAltPredefinedStringColor);
 			EditorGUILayout.PropertyField(propPredefinedStringColor);
 			EditorGUILayout.PropertyField(propShowRawText);

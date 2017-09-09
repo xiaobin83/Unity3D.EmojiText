@@ -92,12 +92,18 @@ namespace ui
 				}
 			}
 		}
-		public Color hrefColor = Color.blue;
+
 		[Serializable]
 		public class HrefClickedEvent : UnityEvent<string, string> {}
 		[SerializeField]
 		private HrefClickedEvent hrefOnClickedEvent = new HrefClickedEvent();
 		public string hrefOnClickedEventName = "OnHrefClicked";
+
+		[Serializable]
+		public class OnTextChangedEvent : UnityEvent {}
+		[SerializeField]
+		private OnTextChangedEvent onTextChangedEvent = new OnTextChangedEvent();
+
 		public bool escapeUnicodeCharacter = true;
 
 		public bool altPredefinedStringColor = false;
@@ -113,40 +119,13 @@ namespace ui
 		}
 
 		const string placeHolderFmt = "<size={0}>M</size>";
-		const string placeHolderNoSizeFactor = "M";
-		string placeHolder
+		string GetPlaceHolder()
 		{
-			get
-			{
-				if (config != null)
-				{
-					if (config.sizeFactor == 1f)
-					{
-						return placeHolderNoSizeFactor;
-					}
-					return string.Format(placeHolderFmt, Mathf.FloorToInt(config.sizeFactor * fontSize));
-				}
-				else
-				{
-					return placeHolderFmt;
-				}
-			}
-		}
-		int placeHolderTailLength
-		{
-			get
-			{
-				if (config != null)
-				{
-					if (config.sizeFactor == 1f)
-						return 0;
-					return 7; // length of </size>. a little bit ugly.
-				}
-				return 0;
-
-			}
-
-		}
+			if (config != null)
+				return string.Format(placeHolderFmt, Mathf.FloorToInt(config.sizeFactor * fontSize));
+			else
+				return string.Format(placeHolderFmt, fontSize);
+        }
 
 		struct PosEmojiTuple
 		{
@@ -183,25 +162,83 @@ namespace ui
 			}
 		}
 
+		readonly static Regex richStyleMatcher = new Regex(@"<[^>]+>(.*)<\s*/[^>]+>");
+		internal static string RemoveRichTextStyleTags(string t)
+		{
+			var m = richStyleMatcher.Match(t);
+			if (m != null && m.Success)
+			{
+				return RemoveRichTextStyleTags(t.Substring(0, m.Index) + m.Groups[1].ToString() + t.Substring(m.Index + m.Length));
+			}
+			return t;
+		}
+		public string textWithoutStyle
+		{
+			get
+			{
+				return RemoveRichTextStyleTags(text);
+			}
+        }
+
+		bool textDirty = true;
+
+		string cachedText = string.Empty;
 		public override string text
 		{
 			get
 			{
-				return UpdateReplacements(base.text);
+				if (Application.isPlaying)
+				{
+					if (textDirty)
+					{
+						cachedText = UpdateReplacements(base.text);
+						textDirty = false;
+					}
+					return cachedText;
+				}
+				else
+				{
+					return UpdateReplacements(base.text);
+				}
 			}
 			set
 			{
 				if (base.text != value)
 				{
 					base.text = value;
+					textDirty = true;
+					if (Application.isPlaying)
+					{
+						onTextChangedEvent.Invoke();
+					}
 				}
 			}
 		}
+
+		public override float preferredWidth
+		{
+			get
+			{
+				var settings = GetGenerationSettings(Vector2.zero);
+				return cachedTextGeneratorForLayout.GetPreferredWidth(text, settings) / pixelsPerUnit;
+			}
+		}
+
+        public override float preferredHeight
+        {
+            get
+            {
+                var settings = GetGenerationSettings(new Vector2(rectTransform.rect.size.x, 0.0f));
+                return cachedTextGeneratorForLayout.GetPreferredHeight(text, settings) / pixelsPerUnit;
+            }
+        }
 
 		public float characterBaseline = 0;
 		public float emojiBaseline = 0;
 
 		CanvasRenderer emojiCanvasRenderer;
+
+		Texture cachedTexture;
 
 		bool shouldEmojilize
 		{
@@ -270,6 +307,10 @@ namespace ui
 		protected override void OnEnable()
 		{
 			base.OnEnable();
+			if (shouldEmojilize)
+			{
+				cachedTexture = GetTexture_(config);
+			}
 			CreateEmojiCanvasRenderer();
 			CreateHrefHandler();
 		}
@@ -304,10 +345,17 @@ namespace ui
 			var match = unicodeEscapeMatcher.Match(inputString);
 			if (match != null && match.Success)
 			{
-				var ch = char.ConvertFromUtf32(System.Convert.ToInt32(match.Groups[1].ToString(), 16));
-				var processed = inputString.Replace(match.Groups[0].ToString(), ch);
-				return EscapeUnicodeChar(processed);
-			}
+				try
+				{
+					var ch = char.ConvertFromUtf32(System.Convert.ToInt32(match.Groups[1].ToString(), 16));
+					var processed = inputString.Replace(match.Groups[0].ToString(), ch);
+					return EscapeUnicodeChar(processed);
+				}
+				catch
+				{
+					return inputString;
+				}
+            }
 			return inputString;
 		}
 
@@ -466,19 +514,19 @@ namespace ui
 					}
 
 					int emojiIndex;
-					if (config.map.TryGetValue(fourChar, out emojiIndex))
+					if (GetIndex_(config, fourChar, out emojiIndex))
 					{
 						// Check 64 bit emojis first
 						onEmojiChar(fourChar, emojiIndex);
 						i += 4;
 					}
-					else if (config.map.TryGetValue(doubleChar, out emojiIndex))
+					else if (GetIndex_(config, doubleChar, out emojiIndex))
 					{
 						// Then check 32 bit emojis
 						onEmojiChar(doubleChar, emojiIndex);
 						i += 2;
 					}
-					else if (config.map.TryGetValue(singleChar, out emojiIndex))
+					else if (GetIndex_(config, singleChar, out emojiIndex))
 					{
 						onEmojiChar(singleChar, emojiIndex);
 						i++;
@@ -497,8 +545,7 @@ namespace ui
 			emojiReplacements.Clear();
 
 			var sb = new System.Text.StringBuilder();
-			string placeHolder = this.placeHolder;
-			int placeHolderTailLength = this.placeHolderTailLength;
+			string placeHolder = GetPlaceHolder();
 
 			UpdateEmojiReplacements(
 				inputString, config,
@@ -511,7 +558,7 @@ namespace ui
 						{
 							var emojiStart = sb.Length;
 							sb.Append(placeHolder);
-							var emojiCharStart = sb.Length - 1 - placeHolderTailLength; // 1 -> emoji char
+							var emojiCharStart = sb.Length - 1 - 7; // 1 -> emoji char,  7 -> length of "</size>"
 							emojiReplacements.Add(new PosEmojiTuple(emojiCharStart, emojiIndex));
 							UpdatePosHrefTuples(emojiStart, placeHolder.Length - 4);
 						}
@@ -519,7 +566,7 @@ namespace ui
 						{
 							var emojiStart = sb.Length;
 							sb.Append(placeHolder);
-							var emojiCharStart = sb.Length - 1 - placeHolderTailLength; // 1 -> emoji char
+							var emojiCharStart = sb.Length - 1 - 7; // 1 -> emoji char,  7 -> length of "</size>"
 							emojiReplacements.Add(new PosEmojiTuple(emojiCharStart, emojiIndex));
 							UpdatePosHrefTuples(emojiStart, placeHolder.Length - 2);
 						}
@@ -527,7 +574,7 @@ namespace ui
 						{
 							var emojiStart = sb.Length;
 							sb.Append(placeHolder);
-							var emojiCharStart = sb.Length - 1 - placeHolderTailLength; // 1 -> emoji char
+							var emojiCharStart = sb.Length - 1 - 7; // 1 -> emoji char,  7 -> length of "</size>"
 							emojiReplacements.Add(new PosEmojiTuple(emojiCharStart, emojiIndex));
 							UpdatePosHrefTuples(emojiStart, placeHolder.Length - 1);
 						}
@@ -583,8 +630,7 @@ namespace ui
 				{
 					var r = emojiReplacements[i];
 					var emojiPosInString = r.pos;
-					var emojiRect = config.rects[r.emoji];
-
+					var emojiRect = GetRect_(config, r.emoji);
 					int baseIndex = emojiPosInString * 4;
 					if (baseIndex <= toFill.currentVertCount - 4)
 					{
@@ -621,7 +667,10 @@ namespace ui
 							{
 								toFill.PopulateUIVertex(ref tempVert, baseIndex + k);
 								tempVerts[k] = tempVert;
-								tempVert.color = hrefColor;
+								if (!config.doNotTintHrefText)
+								{
+									tempVert.color = config.hrefColor;
+								}
 								toFill.SetUIVertex(tempVert, baseIndex + k);
 							}
 							hrefVh.Add(tempVerts[0].position.x);
@@ -636,6 +685,9 @@ namespace ui
 
 		protected override void UpdateGeometry()
 		{
+#if UNITY_EDITOR
+			textDirty = true;
+#endif
 			base.UpdateGeometry();
 			if (shouldEmojilize)
 			{
@@ -671,7 +723,7 @@ namespace ui
 						emojiCanvasRenderer.SetMaterial(GetModifiedEmojiMaterial(config.material), 0);
 					else
 						emojiCanvasRenderer.SetMaterial(materialForRendering, 0);
-					emojiCanvasRenderer.SetTexture(config.texture);
+					emojiCanvasRenderer.SetTexture(cachedTexture);
 				}
 			}
 			else
@@ -720,5 +772,53 @@ namespace ui
 			}
 			return string.Empty;
 		}
+
+		// emoji config overrides
+
+		protected delegate Texture GetTextureDelegate(EmojiConfig config);
+		protected static GetTextureDelegate getTextureDelegate;
+		static Texture GetTexture_(EmojiConfig config)
+		{
+			if (getTextureDelegate == null)
+			{
+				return GetTexture(config);
+			}
+			return getTextureDelegate(config);
+		}
+		protected static Texture GetTexture(EmojiConfig config)
+		{
+			return config.texture;
+		}
+
+		protected delegate Rect GetRectDelegate(EmojiConfig config, int ind);
+		protected static GetRectDelegate getRectDelegate;
+		static Rect GetRect_(EmojiConfig config, int ind)
+		{
+			if (getRectDelegate == null)
+			{
+				return GetRect(config, ind);
+			}
+			return getRectDelegate(config, ind);
+		}
+		protected static Rect GetRect(EmojiConfig config, int ind)
+		{
+			return config.rects[ind];
+		}
+
+		protected delegate bool GetIndexDelegate(EmojiConfig config, string ch, out int ind);
+		protected static GetIndexDelegate getIndexDelegate;
+		static bool GetIndex_(EmojiConfig config, string ch, out int ind)
+		{
+			if (getIndexDelegate == null)
+			{
+				return GetIndex(config, ch, out ind);
+			}
+			return getIndexDelegate(config, ch, out ind);
+		}
+		protected static bool GetIndex(EmojiConfig config, string ch, out int ind)
+		{
+			return config.map.TryGetValue(ch, out ind);
+		}
+
 	}
 }

@@ -34,6 +34,8 @@ namespace ui
 		SerializedProperty propTexture;
 		SerializedProperty propRects;
 		SerializedProperty propNames;
+		SerializedProperty propDoNotTintHrefText;
+		SerializedProperty propHrefColor;
 
 		void Init()
 		{
@@ -42,6 +44,8 @@ namespace ui
 				propTexture = serializedObject.FindProperty("texture");
 				propRects = serializedObject.FindProperty("rects");
 				propNames = serializedObject.FindProperty("names");
+				propDoNotTintHrefText = serializedObject.FindProperty("doNotTintHrefText");
+				propHrefColor = serializedObject.FindProperty("hrefColor");
 			}
 		}
 

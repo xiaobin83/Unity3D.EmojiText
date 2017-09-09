@@ -13,6 +13,9 @@ namespace ui
 		GUIContent lbPlaceholder;
 		SerializedProperty propPlaceholder;
 
+		GUIContent lbText;
+		SerializedProperty propText;
+
 		GUIContent lbKeyboardType;
 		SerializedProperty propKeyboardType;
 
@@ -22,6 +25,11 @@ namespace ui
 		SerializedProperty propEmojiConfig;
 		SerializedProperty propEmojiReplaceChar;
 
+		SerializedProperty propCharLimits;
+		SerializedProperty propOnNumCharExceedsEvent;
+
+		SerializedProperty propAllowRichStyleTag;
+
 		void OnEnable()
 		{
 			lbTextComponent = new GUIContent("Text Component");
@@ -29,6 +37,9 @@ namespace ui
 
 			lbPlaceholder = new GUIContent("Placeholder");
 			propPlaceholder = serializedObject.FindProperty("m_Placeholder");
+
+			lbText = new GUIContent("Text");
+			propText = serializedObject.FindProperty("m_Text");
 
 			lbKeyboardType = new GUIContent("Keyboard Type");
 			propKeyboardType = serializedObject.FindProperty("m_KeyboardType");
@@ -41,7 +52,11 @@ namespace ui
 
 			propEmojiReplaceChar = serializedObject.FindProperty("m_EmojiReplaceChar");
 
-		}
+			propCharLimits = serializedObject.FindProperty("m_CharacterLimits");
+			propOnNumCharExceedsEvent = serializedObject.FindProperty("m_OnNumCharExceedsEvent");
+
+			propAllowRichStyleTag = serializedObject.FindProperty("m_AllowRichStyleTag");
+        }
 
 		public override void OnInspectorGUI()
 		{
@@ -56,7 +71,9 @@ namespace ui
 				EditorGUILayout.PropertyField(propEmojiConfig);
 				EditorGUILayout.PropertyField(propEmojiReplaceChar);
 			}
-			serializedObject.ApplyModifiedProperties();
+			EditorGUILayout.PropertyField(propCharLimits);
+			EditorGUILayout.PropertyField(propOnNumCharExceedsEvent);
+            serializedObject.ApplyModifiedProperties();
 		}
 
 	}
