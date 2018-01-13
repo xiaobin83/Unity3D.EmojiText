@@ -242,8 +242,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: AA
-  m_Config: {fileID: 11400000, guid: f53fe2c8157b76e46afc4d7bfa4dd865, type: 2}
+  m_Text: "\u2721\u2721 [ClickMe](link_to_click_me) <size=30>\u262E</size>\u262E\n\u2763\u2763\u2763\u2763\n\u2763\u2763\u2763\u2763\u2763\u2763\u2763\u2763[ClickThis](link_to_click_this)"
+  m_Config: {fileID: 11400000, guid: 5e67cd84eaf3c214f9a984e64cbed88c, type: 2}
   hrefOnClickedEvent:
     m_PersistentCalls:
       m_Calls:
