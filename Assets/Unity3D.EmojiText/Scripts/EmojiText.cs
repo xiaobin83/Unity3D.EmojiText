@@ -252,7 +252,7 @@ namespace ui
 		{
 			if (shouldEmojilize && emojiCanvasRenderer == null)
 			{
-				var trans = transform.FindChild("__emoji");
+				var trans = transform.Find("__emoji");
 				if (trans != null)
 				{
 					emojiCanvasRenderer = trans.GetComponent<CanvasRenderer>();

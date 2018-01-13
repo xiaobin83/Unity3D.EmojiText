@@ -43,10 +43,13 @@ namespace ui
 			{
 				if (map_ == null)
 				{
-					map_ = new Dictionary<string, int>();
-					for (int i = 0; i < names.Length; ++i)
+					if (names != null)
 					{
-						map[names[i]] = i;
+						map_ = new Dictionary<string, int>();
+						for (int i = 0; i < names.Length; ++i)
+						{
+							map[names[i]] = i;
+						}
 					}
 				}
 				return map_;
